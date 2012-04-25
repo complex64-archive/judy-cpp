@@ -8,24 +8,40 @@
 namespace judy
 {
 
-template <typename T,
-    typename A = std::allocator<T> >
+template <typename K, typename V,
+    typename A = std::allocator<V> >
 class hs
 {
 public:
-    typedef T           value_type;
-    typedef value_type  key_type;
-    typedef A           allocator;
-    typedef value_type* pointer;
-    typedef value_type& reference;
-    typedef std::size_t size_type;
+    typedef K  key_type;
+    typedef V  value_type;
+    typedef A  allocator;
+
+    typedef key_type*    key_pointer;
+    typedef value_type*  value_pointer;
+    typedef key_type&    key_reference;
+    typedef value_type&  value_reference;
 
 
 public:
-    inline bool
-    insert(reference key, reference value)
+    bool
+    insert(key_reference key, value_reference value)
     {
         return false;
+    }
+
+
+    bool
+    remove(key_reference key)
+    {
+        return false;
+    }
+
+
+    value_type
+    get(key_reference key)
+    {
+        throw 20;
     }
 };
 
