@@ -1,6 +1,11 @@
 #ifndef JUDY_CPP_HPP
 #define JUDY_CPP_HPP JUDY_CPP_HPP
 
+#include <Judy.h>
+
+#include <boost/pool/poolfwd.hpp>
+#include <boost/pool/pool_alloc.hpp>
+
 #include <memory>
 #include <iostream>
 
@@ -8,8 +13,10 @@
 namespace judy
 {
 
-template <typename K, typename V,
-    typename A = std::allocator<V> >
+template <
+    typename K,
+    typename V,
+    typename A = boost::fast_pool_allocator<V> >
 class hs
 {
 public:
@@ -24,6 +31,24 @@ public:
 
 
 public:
+    /** TODO - Document. */
+    hs()
+        : size_(0),
+          hs_array_((Pvoid_t) 0)
+    {}
+
+
+    /** TODO - Document. */
+    ~hs()
+    {
+        // Force freeing the system memory.
+        boost::singleton_pool<
+            boost::pool_allocator_tag, sizeof(value_pointer)
+        >::release_memory();
+    }
+
+
+    /** TODO - Document. */
     bool
     insert(key_reference key, value_reference value)
     {
@@ -31,18 +56,36 @@ public:
     }
 
 
+    /** TODO - Document. */
     bool
     remove(key_reference key)
     {
-        return false;
+        int status = 0;
+        JHSD(status, hs_array_, reinterpret_cast<void*>(&key), sizeof(key));
+
+        bool was_removed = (status == 1);
+        if (was_removed) this->size_--;
+        return was_removed;
     }
 
 
+    /** TODO - Document. */
     value_type
     get(key_reference key)
     {
         throw 20;
     }
+
+
+private:
+    /** TODO - Document. */
+    boost::fast_pool_allocator<value_type> allocator_;
+
+    /** TODO - Document. */
+    std::size_t size_;
+
+    /** TODO - Document. */
+    Pvoid_t hs_array_;
 };
 
 }
