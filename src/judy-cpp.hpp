@@ -6,86 +6,85 @@
 #include <boost/pool/poolfwd.hpp>
 #include <boost/pool/pool_alloc.hpp>
 
-#include <memory>
-#include <iostream>
-
-
 namespace judy
 {
 
-template <
-    typename K,
-    typename V,
-    typename A = boost::fast_pool_allocator<V> >
+template <typename K, typename V>
 class hs
 {
 public:
-    typedef K  key_type;
-    typedef V  value_type;
-    typedef A  allocator;
+    typedef K           key_type;
+    typedef key_type&   key_reference;
+    typedef V           value_type;
+    typedef value_type& value_reference;
 
-    typedef key_type*    key_pointer;
-    typedef value_type*  value_pointer;
-    typedef key_type&    key_reference;
-    typedef value_type&  value_reference;
+    // JudyHS's internal types.
+    typedef Pvoid_t  hs_array_type;
+    typedef Pvoid_t  hs_value_type;
+    typedef PPvoid_t hs_value_pointer;
+    typedef uint8_t* hs_key_type;
+    typedef Word_t   hs_length_type;
 
 
 public:
-    /** TODO - Document. */
     hs()
         : size_(0),
-          hs_array_((Pvoid_t) 0)
+          judy_array_((hs_array_type) 0)
     {}
 
 
-    /** TODO - Document. */
-    ~hs()
+    value_type
+    insert(const key_reference key,
+           const std::size_t key_size,
+           const value_reference value)
     {
-        // Force freeing the system memory.
-        boost::singleton_pool<
-            boost::pool_allocator_tag, sizeof(value_pointer)
-        >::release_memory();
+        // Obtain value-pointer for the (new) index.
+        hs_value_pointer target_ptr =
+            JudyHSIns(&(this->judy_array_),
+                static_cast<void*>(key), key_size, PJE0);
+
+        // Return the old value if present.
+        value_type old_value = 0;
+        if (target_ptr != 0) old_value = static_cast<value_type>(*target_ptr);
+
+        *target_ptr = value;
+
+        return old_value;
     }
 
 
-    /** TODO - Document. */
     bool
-    insert(key_reference key, value_reference value)
+    remove(const key_reference key,
+           const std::size_t key_size)
     {
+        // TODO - Implement!
         return false;
     }
 
 
-    /** TODO - Document. */
-    bool
-    remove(key_reference key)
-    {
-        int status = 0;
-        JHSD(status, hs_array_, reinterpret_cast<void*>(&key), sizeof(key));
-
-        bool was_removed = (status == 1);
-        if (was_removed) this->size_--;
-        return was_removed;
-    }
-
-
-    /** TODO - Document. */
     value_type
-    get(key_reference key)
+    get(const key_reference key,
+        const std::size_t key_size)
+        throw (bool)
     {
-        throw 20;
+        hs_value_pointer value_p =
+            JudyHSGet(this->judy_array_, static_cast<void*>(key), key_size);
+
+        if (value_p != NULL) {
+            return static_cast<value_type>(*value_p);
+        }
+        else {
+            throw false;
+        }
     }
 
 
 private:
-    /** TODO - Document. */
-    boost::fast_pool_allocator<value_type> allocator_;
-
-    /** TODO - Document. */
+    /// The current array's size cached
     std::size_t size_;
 
-    /** TODO - Document. */
-    Pvoid_t hs_array_;
+    /// Reference to the JudyHS array we're wrapping
+    hs_array_type judy_array_;
 };
 
 }
