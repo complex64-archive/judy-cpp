@@ -2,9 +2,7 @@
 #define JUDY_CPP_HPP JUDY_CPP_HPP
 
 #include <Judy.h>
-
-#include <boost/pool/poolfwd.hpp>
-#include <boost/pool/pool_alloc.hpp>
+#include <cstring>
 
 namespace judy
 {
