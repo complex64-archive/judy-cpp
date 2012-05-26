@@ -4,10 +4,16 @@
 #include <Judy.h>
 #include <cstring>
 
-namespace judy
-{
+namespace judy {
 
-template <typename K, typename V>
+typedef Pvoid_t  hs_array_type;
+typedef Pvoid_t  hs_value_type;
+typedef PPvoid_t hs_value_pointer;
+typedef uint8_t* hs_key_type;
+typedef Word_t   hs_length_type;
+
+template <typename K,
+    typename V >
 class hs
 {
 public:
@@ -15,13 +21,6 @@ public:
     typedef key_type&   key_reference;
     typedef V           value_type;
     typedef value_type& value_reference;
-
-    // JudyHS's internal types.
-    typedef Pvoid_t  hs_array_type;
-    typedef Pvoid_t  hs_value_type;
-    typedef PPvoid_t hs_value_pointer;
-    typedef uint8_t* hs_key_type;
-    typedef Word_t   hs_length_type;
 
 
 public:
@@ -31,19 +30,27 @@ public:
     {}
 
 
+    ~hs()
+    {
+        JudyHSFreeArray(&this->judy_array_, PJE0);
+    }
+
+
     value_type
     insert(const key_reference key,
-           const std::size_t key_size,
+           const hs_length_type key_size,
            const value_reference value)
     {
         // Obtain value-pointer for the (new) index.
         hs_value_pointer target_ptr =
-            JudyHSIns(&(this->judy_array_),
+            JudyHSIns(&this->judy_array_,
                 static_cast<void*>(key), key_size, PJE0);
 
         // Return the old value if present.
         value_type old_value = 0;
-        if (target_ptr != 0) old_value = static_cast<value_type>(*target_ptr);
+        if (target_ptr != 0)
+            old_value = static_cast<value_type>(*target_ptr);
+        else this->size_++;
 
         *target_ptr = value;
 
@@ -51,18 +58,25 @@ public:
     }
 
 
-    bool
+    value_type
     remove(const key_reference key,
-           const std::size_t key_size)
+           const hs_length_type key_size)
     {
-        // TODO - Implement!
-        return false;
+        value_type old_value = 0;
+        try {
+            old_value = this->get(key, key_size);
+        } catch (bool) {}
+
+        JudyHSDel(&this->judy_array_, static_cast<void*>(key), key_size, PJE0);
+
+        if (old_value != 0) this->size_--;
+        return old_value;
     }
 
 
     value_type
     get(const key_reference key,
-        const std::size_t key_size)
+        const hs_length_type key_size)
         throw (bool)
     {
         hs_value_pointer value_p =
